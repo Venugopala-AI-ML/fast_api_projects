@@ -11,14 +11,14 @@ from requests import models
 from sqlalchemy.orm import Session
 from starlette import status
 import schemas, database, models
+from app.config import settings
 
 
 
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
 
-SECRET_KEY = "bJfX49Scdo6xVfIyXLQ2FXLmMiktaLywzuENMnssMd8"  # Replace with a strong secret key
-ALGORITHM = "HS256"  # Replace with a strong algorithm
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 # Replace with a strong token expiration time
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expires_minutes # Replace with a strong token expiration time
 
 # This tells FastAPI where to look for
 #  the token (the /login URL)
@@ -46,7 +46,7 @@ def verify_access_token(token: str, credentials_exception):
         id: str = payload.get("user_id")
         if not id:
             raise credentials_exception
-        token_data = schemas.TokenData(user_id= id)
+        token_data = schemas.TokenData(id= id)
 
     except JWTError:
         raise credentials_exception
@@ -63,7 +63,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: database.Session =
     )
 
     token_data = verify_access_token(token, credentials_exception)
-    user = db.query(models.User).filter(models.User.id == token_data.user_id).first()
+    user = db.query(models.User).filter(models.User.id == token_data.id).first()
     if not user:
         raise credentials_exception
     return user

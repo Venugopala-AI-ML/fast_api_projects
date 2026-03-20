@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic.types import conint
 
 
 class PostBase(BaseModel):
@@ -16,43 +17,60 @@ class PostCreate(PostBase):
 class PostUpdate(PostBase):
     pass
 
-
-
 class UserBase(BaseModel):
-    email: EmailStr
+    pass
 
-
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    email: EmailStr
     created_at: datetime
-    class Config:
-        orm_mode = True
+
+    model_config = ConfigDict(from_attributes=True)
+    # class Config:
+    #     orm_mode = True
     
 
-class PostResponse(PostBase):
+class Post(PostBase):
     id: int
     created_at: datetime
     owner_id: int
     owner: UserResponse
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
+class PostResponse(BaseModel):
+    Post: Post
+    votes: int
 
 
+    model_config = ConfigDict(from_attributes=True)
+    # class Config:
+    #     orm_mode = True
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
+    email: EmailStr
     password: str
-
-
-
 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    id: Optional[int] | None = None
+
+
+class Vote(BaseModel):
+    post_id: int
+    dir: conint(le=1) # type: ignore
 
 
 class PasswordResetRequest(UserBase):
@@ -70,11 +88,4 @@ class PasswordChangeRequest(BaseModel):
     new_password: str
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    user_id: Optional[int] | None = None
 

@@ -7,12 +7,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import urllib.parse
 import psycopg2
-from config import settings
+from app.config import settings
 
 
 MYSQL_PASSWORD  =urllib.parse.quote_plus(settings.database_password)
 
-SQLALCHEMY_DATABASE_URI = f"postgresql:// {settings.database_username}:{MYSQL_PASSWORD}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
+SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.database_username}:{MYSQL_PASSWORD}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
 engine = create_engine(SQLALCHEMY_DATABASE_URI)
 
 

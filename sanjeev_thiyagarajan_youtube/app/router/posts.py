@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from schemas import PostCreate, PostUpdate, PostResponse, UserCreate, UserResponse
 from utils import pwd_context, hash_password, verify_password
+from sqlalchemy import func
 
 
 router = APIRouter(
@@ -56,10 +57,20 @@ def get_posts(
     group_by: Optional[str] = None
     ):
     try:
-        db_query = db.query(models.Post)
+        # db_query = db.query(models.Post)
+        # if search:
+        #     db_query = db_query.filter(models.Post.title.contains(search) | models.Post.content.contains(search))
+        # posts = db_query.limit(limit).offset(skip).all()
+
+
+        new_post_query = db.query(models.Post, func.count(models.Vote.post_id).label("votes")
+            ).join(models.Vote,models.Post.id == models.Vote.post_id, isouter=True
+                   ).group_by(models.Post.id 
+            )
         if search:
-            db_query = db_query.filter(models.Post.title.contains(search) | models.Post.content.contains(search))
-        posts = db_query.limit(limit).offset(skip).all()
+            new_post_query = new_post_query.filter(models.Post.title.contains(search) | models.Post.content.contains(search))
+        
+        posts = new_post_query.limit(limit).offset(skip).all()
         return posts
     except Exception as err:
         raise HTTPException(
@@ -84,10 +95,15 @@ def get_post(
     # return post
 
     """ with sql query using only orm """
-    post = db.query(models.Post).filter(models.Post.id == post_id).limit(1).first()
-    if not post:
+    # post = db.query(models.Post).
+    new_post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")
+            ).join(models.Vote,models.Post.id == models.Vote.post_id, isouter=True
+                   ).group_by(models.Post.id 
+            ).filter(models.Post.id == post_id).limit(1).first()
+
+    if not new_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-    return post
+    return new_post
 
 
 @router.put('/{post_id}', status_code=status.HTTP_201_CREATED, response_model=PostResponse)

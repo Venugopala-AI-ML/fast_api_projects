@@ -1,3 +1,5 @@
+from unittest import result
+
 from fastapi import FastAPI, APIRouter, HTTPException, Response, status, Depends
 from typing import Optional, List
 
@@ -17,8 +19,20 @@ router = APIRouter(
 
 
 
+def _post_with_votes_query(db: Session):
+    return (
+        db.query(models.Post, func.count(models.Vote.post_id).label("votes"))
+        .join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True)
+        .group_by(models.Post.id)
+    )
+
+
 @router.post('/',status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def create_post(post: PostCreate, db:Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def create_post(
+    post: PostCreate, 
+    db:Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+    ):
     # post_dict = post.dict()
     # cursor.execute(
     #     """ INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING * """, 
@@ -31,17 +45,25 @@ def create_post(post: PostCreate, db:Session = Depends(get_db), current_user: mo
 
     """ with sql query using only orm """
     try:
-        post_dict = post.dict()
-        post_dict["owner_id"] = current_user.id
         # new_post = models.Post(title=post.title, content=post.content, published=post.published)
-        new_post = models.Post(**post_dict)
+        new_post = models.Post(owner_id=current_user.id, **post.dict())
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
 
-        return new_post
+        # fetch with votes count — same query as get_post
+        # result = db.query(models.Post, func.count(models.Vote.post_id).label("votes")
+        #     ).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True
+        #     ).group_by(models.Post.id
+        #     ).filter(models.Post.id == new_post.id).first()
+
+        return _post_with_votes_query(db).filter(models.Post.id == new_post.id).first()
+    
     except Exception as err:
-        pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(err)
+        )
 
 
 @router.get('/', status_code=status.HTTP_200_OK, response_model=List[PostResponse])
@@ -70,6 +92,7 @@ def get_posts(
         
         posts = new_post_query.limit(limit).offset(skip).all()
         return posts
+    
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
@@ -100,12 +123,20 @@ def get_post(
             ).filter(models.Post.id == post_id).limit(1).first()
 
     if not new_post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {post_id} not found"
+        )
     return new_post
 
 
 @router.put('/{post_id}', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def update_post(post_id: int, updated_post: PostUpdate, db:Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def update_post(
+    post_id: int, 
+    updated_post: PostUpdate, 
+    db:Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+    ):
     
     """ using sql query """
     # cursor.execute(""" select * from posts where id = %s""", (post_id,))
@@ -121,8 +152,17 @@ def update_post(post_id: int, updated_post: PostUpdate, db:Session = Depends(get
     """ with sql query using only orm """
     update_datas = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not update_datas:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
-
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {post_id} not found"
+        )
+    
+    if update_datas.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this post"
+        )
+    
     update_datas.title = updated_post.title
     update_datas.content = updated_post.content
     update_datas.published = updated_post.published
@@ -146,7 +186,11 @@ def patch_post(post_id: int, updated_fields: dict, db:Session = Depends(get_db),
     return {"posts": "updated successfully"}
 
 @router.delete('/{post_id}', status_code=status.HTTP_200_OK, response_model=PostResponse)
-def delete_post(post_id: int, db:Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def delete_post(
+    post_id: int,
+    db:Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+    ):
 
     """ using sql query """
     # cursor.execute(""" select * from posts where id = %s""", (post_id,))
@@ -161,8 +205,16 @@ def delete_post(post_id: int, db:Session = Depends(get_db), current_user: models
     """ with sql query using only orm """
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Post with id {post_id} not found"
+        )
+    if post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this post"
+        )
     db.delete(post)
     db.commit()
-    return {"message": "Post deleted successfully"}
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 

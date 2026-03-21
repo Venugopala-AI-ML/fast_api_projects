@@ -1,16 +1,12 @@
-
-
-
-
-
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
-from requests import models
 from sqlalchemy.orm import Session
 from starlette import status
-import schemas, database, models
+from app import schemas
+from app import database
+from app import models
 from app.config import settings
 
 

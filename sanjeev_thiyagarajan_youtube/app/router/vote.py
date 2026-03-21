@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Response, status, Depends
 from typing import Optional, List
 from random import random, randrange
 import time
-import models
+from app import models
 from database import Base, get_db, engine
 from sqlalchemy.orm import Session
 from typing import List

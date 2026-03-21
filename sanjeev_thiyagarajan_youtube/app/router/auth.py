@@ -6,7 +6,7 @@ from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 import database, schemas
-import models
+from app import models
 import oauth2, utils
 from random import randint
 

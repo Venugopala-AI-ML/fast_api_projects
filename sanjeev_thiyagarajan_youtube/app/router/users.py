@@ -4,7 +4,7 @@ from random import random, randrange
 from psycopg2.extras import RealDictCursor
 import psycopg2
 import time
-import models
+from app import models
 from database import Base, get_db, engine
 from sqlalchemy.orm import Session
 from typing import List

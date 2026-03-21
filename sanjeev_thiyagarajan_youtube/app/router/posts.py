@@ -2,12 +2,14 @@ from fastapi import FastAPI, APIRouter, HTTPException, Response, status, Depends
 from typing import Optional, List
 
 from oauth2 import get_current_user
-import models
 from database import Base, get_db, engine
 from sqlalchemy.orm import Session
 from typing import List
 from schemas import PostCreate, PostUpdate, PostResponse, UserCreate, UserResponse
 from utils import pwd_context, hash_password, verify_password
+from app import models
+from app import schemas
+from app import oauth2
 from sqlalchemy import func
 
 

@@ -1,23 +1,23 @@
-from fastapi import FastAPI, APIRouter, HTTPException,middleware,Response, status, Depends
+from fastapi import FastAPI, APIRouter, HTTPException,Response, status, Depends
 from random import random, randrange
+from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import models
-from database import Base, engine
-from router import posts, users, auth, vote
-import os
+from app.database import Base, engine
+from app.router import posts, users, auth, vote
 
-from config import settings
+
+from app.config import settings
 
 
 # Base.metadata.create_all(bind=engine)
-
 
 app = FastAPI()
 
 origins = ["*"]
 
 app.add_middleware(
+    CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],

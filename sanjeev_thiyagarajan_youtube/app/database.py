@@ -9,6 +9,10 @@ import urllib.parse
 import psycopg2
 from app.config import settings
 
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 MYSQL_PASSWORD  =urllib.parse.quote_plus(settings.database_password)
 

@@ -2,12 +2,12 @@ from fastapi import FastAPI, APIRouter, HTTPException, Response, status, Depends
 from typing import Optional, List
 from random import random, randrange
 from app import models
-from database import Base, get_db, engine
+from app.database import Base, get_db, engine
 from sqlalchemy.orm import Session
 from typing import List
-from schemas import UserResponse, Vote
-from utils import pwd_context, hash_password, verify_password
-from oauth2 import get_current_user
+from app.schemas import UserResponse, Vote
+from app.utils import pwd_context, hash_password, verify_password
+from app.oauth2 import get_current_user
 
 
 

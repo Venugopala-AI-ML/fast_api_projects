@@ -9,11 +9,6 @@ import urllib.parse
 import psycopg2
 from app.config import settings
 
-import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 MYSQL_PASSWORD  =urllib.parse.quote_plus(settings.database_password)
 
 SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.database_username}:{MYSQL_PASSWORD}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
